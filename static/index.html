@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 競艇予想ダッシュボード</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <!-- Chart.js for beautiful charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i data-lucide="ship"></i>
+                <span>VisionAI Racing</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active">
+                    <i data-lucide="layout-dashboard"></i>
+                    Dashboard
+                </a>
+                <a href="#" class="nav-item">
+                    <i data-lucide="database"></i>
+                    Data Engine
+                </a>
+                <a href="#" class="nav-item">
+                    <i data-lucide="settings"></i>
+                    Settings
+                </a>
+            </nav>
+            <div class="user-profile">
+                <div class="avatar"></div>
+                <span>Pro User</span>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-header">
+                <div class="header-titles">
+                    <h1>AI Analysis Dashboard</h1>
+                    <p>Powered by Gemini Vision & Google Sheets Logic Engine</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn-icon">
+                        <i data-lucide="bell"></i>
+                    </button>
+                </div>
+            </header>
+
+            <div class="dashboard-grid">
+
+                <!-- Upload Section -->
+                <section class="upload-section card">
+                    <div class="card-header">
+                        <h2><i data-lucide="upload-cloud"></i> 出走表アップロード</h2>
+                    </div>
+                    <div class="upload-area" id="drop-zone">
+                        <input type="file" id="file-input" hidden accept="image/*" multiple>
+                        <i data-lucide="image-plus" class="upload-icon"></i>
+                        <p class="upload-message">クリックまたは画像をドラッグ＆ドロップ</p>
+                        <p class="upload-sub">ボートレース（競艇）の出走表画像をアップロードしてください。Gemini APIが解析します。</p>
+                        <button class="btn-primary" id="upload-btn">ファイルを選択</button>
+                    </div>
+
+                    <!-- Loading Overlay -->
+                    <div class="loading-overlay hidden" id="loading-state">
+                        <div class="spinner"></div>
+                        <p class="loading-text">Vision APIで解析中...</p>
+                        <p class="loading-sub">スプレッドシート演算エンジン実行中</p>
+                    </div>
+                </section>
+
+                <!-- Status & Insights Summary -->
+                <section class="insights-summary">
+                    <div class="stat-card">
+                        <div class="stat-icon purple"><i data-lucide="cpu"></i></div>
+                        <div class="stat-info">
+                            <h3>解析エンジン状態</h3>
+                            <p class="stat-value">Gemini Ultra 準備完了</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green"><i data-lucide="sheet"></i></div>
+                        <div class="stat-info">
+                            <h3>スプレッドシート連携</h3>
+                            <p class="stat-value">接続済み (Engine V2)</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Results Section (Initially Hidden) -->
+                <section class="results-section hidden" id="results-area">
+
+                    <div class="results-header card full-width">
+                        <div class="race-meta">
+                            <h2>解析結果: 第<span id="res-race-num">--</span>レース</h2>
+                            <div class="badges">
+                                <span class="badge" id="res-distance">---</span>
+                                <span class="badge" id="res-condition">---</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="charts-container" style="display: none;">
+                        <!-- Hidden charts for now as requested layout focuses on the table -->
+                        <div class="chart-card card">
+                            <h3>分析チャート</h3>
+                            <div class="chart-wrapper">
+                                <canvas id="radarChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Top Picks -->
+                        <div class="top-picks-card card">
+                            <h3>推奨艇</h3>
+                            <ul class="picks-list" id="picks-list">
+                                <!-- Populated via JS -->
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="data-table-card card full-width">
+                        <div class="card-header">
+                            <h3>直前情報予測データ</h3>
+                            <button class="btn-ghost btn-sm" id="export-btn"><i data-lucide="download"></i>
+                                CSVエクスポート</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>枠番</th>
+                                        <th>選手名</th>
+                                        <th class="text-center">補正1周</th>
+                                        <th class="text-center">補正回り</th>
+                                        <th class="text-center">補正直線</th>
+                                        <th class="text-center">補正展示</th>
+                                        <th class="text-center">機力合算</th>
+                                        <th class="text-center">平均差</th>
+                                        <th class="text-center">判定</th>
+                                        <th class="text-center">買い目</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-body">
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="data-table-card card full-width" style="margin-top: 1.5rem;">
+                        <div class="card-header">
+                            <h3>AI予想詳細データ</h3>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>枠番</th>
+                                        <th>選手名</th>
+                                        <th class="text-center">予想1着率</th>
+                                        <th class="text-center">予想2着率</th>
+                                        <th class="text-center">予想3着率</th>
+                                        <th class="text-center">予想3連対率</th>
+                                        <th class="text-center">総合力</th>
+                                        <th class="text-center">最終評価</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="prediction-body">
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Initialize local scripts -->
+    <script src="app.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>
