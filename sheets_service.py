@@ -8,15 +8,30 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 def get_sheets_service():
     """
     Authenticates and returns the Google Sheets API service object.
-    Requires credentials.json in the project root.
+    First checks the GOOGLE_CREDENTIALS_JSON environment variable (for Render deployment).
+    Falls back to credentials.json in the project root if it exists (for local development).
     """
+    import json
+    
+    # Method 1: Environment Variable (Best for Cloud/Render)
+    creds_json_str = os.getenv("GOOGLE_CREDENTIALS_JSON")
+    if creds_json_str:
+        try:
+            creds_info = json.loads(creds_json_str)
+            creds = Credentials.from_service_account_info(creds_info, scopes=SCOPES)
+            service = build('sheets', 'v4', credentials=creds)
+            return service
+        except Exception as e:
+            raise Exception(f"Failed to load credentials from environment variable: {str(e)}")
+            
+    # Method 2: Local File (Fallback for local dev)
     creds_path = 'credentials.json'
-    if not os.path.exists(creds_path):
-        raise Exception("credentials.json not found. Please place the Service Account JSON key in the root directory.")
+    if os.path.exists(creds_path):
+        creds = Credentials.from_service_account_file(creds_path, scopes=SCOPES)
+        service = build('sheets', 'v4', credentials=creds)
+        return service
         
-    creds = Credentials.from_service_account_file(creds_path, scopes=SCOPES)
-    service = build('sheets', 'v4', credentials=creds)
-    return service
+    raise Exception("No Google Sheets credentials found. Please set GOOGLE_CREDENTIALS_JSON env var or provide credentials.json")
 
 def write_to_sheets(extracted_data: dict, sheet_name="シート20"):
     """
