@@ -525,3 +525,111 @@ body {
 .text-right {
     text-align: right;
 }
+
+/* Responsive Design (Mobile Support) */
+@media (max-width: 768px) {
+    .app-container {
+        flex-direction: column;
+    }
+
+    /* Hide sidebar by default on mobile, or transform it into a top nav */
+    .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        padding: 1rem;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .logo {
+        margin-bottom: 0;
+        font-size: 1rem;
+    }
+
+    .nav-menu {
+        flex-direction: row;
+        gap: 0.5rem;
+    }
+
+    .nav-item {
+        padding: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .nav-item span {
+        display: none; /* Hide text, show only icons on very small screens */
+    }
+
+    .user-profile {
+        display: none; /* Hide profile on mobile to save space */
+    }
+
+    /* Make main content full width with smaller padding */
+    .main-content {
+        padding: 1rem;
+    }
+
+    .header-titles h1 {
+        font-size: 1.5rem;
+    }
+
+    .header-titles p {
+        font-size: 0.875rem;
+    }
+
+    .header-actions {
+        display: none;
+    }
+
+    /* Change grid to single column */
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .insights-summary {
+        grid-column: 1 / -1;
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .stat-card {
+        flex: 1 1 calc(50% - 0.5rem);
+        min-width: 140px;
+        padding: 1rem;
+    }
+
+    /* Adjust tables for mobile */
+    .card {
+        padding: 1rem;
+    }
+
+    .charts-container {
+        grid-template-columns: 1fr;
+    }
+
+    /* Make tables scrollable horizontally without breaking layout */
+    .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin-bottom: 1rem;
+    }
+
+    .data-table th, 
+    .data-table td {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.875rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .stat-card {
+        flex: 1 1 100%;
+    }
+
+    .upload-area {
+        padding: 2rem 1rem;
+    }
+}
