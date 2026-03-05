@@ -1,14 +1,17 @@
-/* Base Styles & CSS Variables */
+/* Base Styles & CSS Variables (Expected Value Mode) */
 :root {
-    --bg-dark: #0f111a;
-    --sidebar-bg: #151822;
-    --card-bg: rgba(26, 30, 41, 0.7);
-    --border-color: rgba(255, 255, 255, 0.08);
+    --bg-dark: #0a0b10;
+    --sidebar-bg: #0f111a;
+    --card-bg: rgba(15, 17, 26, 0.85);
+    --border-color: rgba(0, 255, 204, 0.15);
 
-    --primary: #6366f1;
-    --primary-hover: #4f46e5;
-    --secondary: #ec4899;
-    --accent: #14b8a6;
+    --primary: #00ffcc;
+    /* Neon Cyan/Green for Expected Value */
+    --primary-hover: #00e6b8;
+    --secondary: #eab308;
+    /* Gold for Premium */
+    --accent: #8b5cf6;
+    /* Purple for AI Process */
 
     --text-main: #f8fafc;
     --text-muted: #94a3b8;
@@ -123,8 +126,9 @@ body {
     font-size: 1.875rem;
     font-weight: 700;
     margin-bottom: 0.5rem;
-    background: linear-gradient(to right, #fff, #94a3b8);
+    background: linear-gradient(to right, #ffffff, #00ffcc);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -487,6 +491,33 @@ body {
     font-size: 0.875rem;
 }
 
+/* Odds Input Section */
+.odds-table-container {
+    max-height: 400px;
+    overflow-y: auto;
+    margin: 0 1.5rem 1.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+}
+
+.odds-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-main);
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.odds-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: rgba(0, 255, 204, 0.05);
+}
+
 .data-table tr:hover td {
     background: rgba(255, 255, 255, 0.02);
 }
@@ -559,11 +590,13 @@ body {
     }
 
     .nav-item span {
-        display: none; /* Hide text, show only icons on very small screens */
+        display: none;
+        /* Hide text, show only icons on very small screens */
     }
 
     .user-profile {
-        display: none; /* Hide profile on mobile to save space */
+        display: none;
+        /* Hide profile on mobile to save space */
     }
 
     /* Make main content full width with smaller padding */
@@ -617,7 +650,7 @@ body {
         margin-bottom: 1rem;
     }
 
-    .data-table th, 
+    .data-table th,
     .data-table td {
         padding: 0.75rem 0.5rem;
         font-size: 0.875rem;

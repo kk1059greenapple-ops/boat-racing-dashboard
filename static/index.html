@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 競艇予想ダッシュボード</title>
+    <title>VisionAI 期待値分析ダッシュボード (Expected Value)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=2">
     <!-- Chart.js for beautiful charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Icons -->
@@ -45,8 +45,8 @@
         <main class="main-content">
             <header class="top-header">
                 <div class="header-titles">
-                    <h1>AI Analysis Dashboard</h1>
-                    <p>Powered by Gemini Vision & Google Sheets Logic Engine</p>
+                    <h1>Expected Value Analysis Engine</h1>
+                    <p>Powered by Gemini Vision & Google Sheets Analytics (期待値特化モード)</p>
                 </div>
                 <div class="header-actions">
                     <button class="btn-icon">
@@ -60,7 +60,41 @@
                 <!-- Upload Section -->
                 <section class="upload-section card">
                     <div class="card-header">
-                        <h2><i data-lucide="upload-cloud"></i> 出走表アップロード</h2>
+                        <h2><i data-lucide="upload-cloud"></i> レース場選択と出走表アップロード</h2>
+                    </div>
+
+                    <div style="margin: 0 1.5rem 1.5rem 1.5rem;">
+                        <label for="racecourse-select"
+                            style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.95rem; color: var(--text);">対象のレース場<span
+                                style="color: var(--danger); margin-left: 0.25rem;">*</span></label>
+                        <select id="racecourse-select"
+                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-primary); color: var(--text); font-family: inherit; font-size: 1rem; cursor: pointer;">
+                            <option value="">レース場を選択してください</option>
+                            <option value="桐生">桐生</option>
+                            <option value="戸田">戸田</option>
+                            <option value="江戸川">江戸川</option>
+                            <option value="平和島">平和島</option>
+                            <option value="多摩川">多摩川</option>
+                            <option value="浜名湖">浜名湖</option>
+                            <option value="蒲郡">蒲郡</option>
+                            <option value="常滑">常滑</option>
+                            <option value="津">津</option>
+                            <option value="三国">三国</option>
+                            <option value="びわこ">びわこ</option>
+                            <option value="住之江">住之江</option>
+                            <option value="尼崎">尼崎</option>
+                            <option value="鳴門">鳴門</option>
+                            <option value="丸亀">丸亀</option>
+                            <option value="児島">児島</option>
+                            <option value="宮島">宮島</option>
+                            <option value="徳山">徳山</option>
+                            <option value="下関">下関</option>
+                            <option value="若松">若松</option>
+                            <option value="芦屋">芦屋</option>
+                            <option value="福岡">福岡</option>
+                            <option value="唐津">唐津</option>
+                            <option value="大村">大村</option>
+                        </select>
                     </div>
                     <div class="upload-area" id="drop-zone">
                         <input type="file" id="file-input" hidden accept="image/*" multiple>
@@ -75,6 +109,34 @@
                         <div class="spinner"></div>
                         <p class="loading-text">Vision APIで解析中...</p>
                         <p class="loading-sub">スプレッドシート演算エンジン実行中</p>
+                    </div>
+                </section>
+
+                <!-- Odds Input Section -->
+                <section class="odds-input-section card">
+                    <div class="card-header">
+                        <h2><i data-lucide="calculator"></i> オッズ手動入力 (抽出3連単)</h2>
+                        <span class="badge"
+                            style="background: rgba(0, 255, 204, 0.1); color: var(--primary);">期待値計算用</span>
+                    </div>
+                    <p class="upload-sub" style="margin: 0 1.5rem 1rem;">主要な買い目（10〜20点）と現在のオッズを入力してください。</p>
+
+                    <div class="odds-table-container">
+                        <table class="data-table odds-table">
+                            <thead>
+                                <tr>
+                                    <th>No.</th>
+                                    <th>買い目 (例: 1-2-3)</th>
+                                    <th>オッズ</th>
+                                    <th>的中確率</th>
+                                    <th>期待値 (回収率)</th>
+                                    <th>判定</th>
+                                </tr>
+                            </thead>
+                            <tbody id="odds-table-body">
+                                <!-- Generated by JS for 20 rows -->
+                            </tbody>
+                        </table>
                     </div>
                 </section>
 
@@ -158,7 +220,7 @@
 
                     <div class="data-table-card card full-width" style="margin-top: 1.5rem;">
                         <div class="card-header">
-                            <h3>AI予想詳細データ</h3>
+                            <h3>AI 期待値分析データ (Expected Value & Picks)</h3>
                         </div>
                         <div class="table-responsive">
                             <table class="data-table">
@@ -187,7 +249,7 @@
     </div>
 
     <!-- Initialize local scripts -->
-    <script src="app.js"></script>
+    <script src="app.js?v=2"></script>
     <script>
         lucide.createIcons();
     </script>

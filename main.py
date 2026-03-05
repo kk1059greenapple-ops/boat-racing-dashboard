@@ -1,6 +1,6 @@
 import os
 from typing import List
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -33,11 +33,14 @@ async def root():
 
 
 @app.post("/api/analyze")
-async def analyze_racing_data(files: List[UploadFile] = File(...)):
+async def analyze_racing_data(
+    racecourse: str = Form(...),
+    files: List[UploadFile] = File(...)
+):
     """
-    1. Receive image file(s)
+    1. Receive image file(s) and racecourse
     2. Extract data via Gemini (Vision)
-    3. Send data to Google Sheets (Input A3:H8)
+    3. Send data to Google Sheets (Input A3:H8, C20)
     4. Wait/Verify calculation
     5. Read result from Google Sheets (Output I13:L18, S3:T8)
     6. Return result to frontend
@@ -61,6 +64,7 @@ async def analyze_racing_data(files: List[UploadFile] = File(...)):
         all_gemini_horses = sorted(all_gemini_horses, key=lambda x: int(x.get("number", 99)))
         
         combined_extracted_data = {
+            "racecourse": racecourse,
             "race_info": race_info_merged,
             "horses": all_gemini_horses
         }

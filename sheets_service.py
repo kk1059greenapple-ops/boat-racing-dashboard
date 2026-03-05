@@ -97,6 +97,9 @@ def write_to_sheets(extracted_data: dict, sheet_name="シート20"):
         else:
             values_a13_h18.append(["", "", "", "", "", "", "", ""])
 
+    # Prepare data for C20 (Racecourse)
+    racecourse = extracted_data.get('racecourse', "")
+
     data = [
         {
             'range': f"{sheet_name}!A3:C8",
@@ -109,6 +112,10 @@ def write_to_sheets(extracted_data: dict, sheet_name="シート20"):
         {
             'range': f"{sheet_name}!A13:H18",
             'values': values_a13_h18
+        },
+        {
+            'range': f"{sheet_name}!C20",
+            'values': [[str(racecourse)]]
         }
     ]
     

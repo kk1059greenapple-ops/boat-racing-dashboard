@@ -4,12 +4,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file-input');
     const uploadBtn = document.getElementById('upload-btn');
+    const racecourseSelect = document.getElementById('racecourse-select');
     const loadingState = document.getElementById('loading-state');
     const resultsArea = document.getElementById('results-area');
 
     const tableBody = document.getElementById('table-body');
     const predictionBody = document.getElementById('prediction-body');
     const picksList = document.getElementById('picks-list');
+
+    // Generate 20 rows for Odds Input
+    const oddsTableBody = document.getElementById('odds-table-body');
+    if (oddsTableBody) {
+        for (let i = 1; i <= 20; i++) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="text-center font-mono">${i}</td>
+                <td>
+                    <input type="text" class="odds-input kaime-input" placeholder="例: 1-2-3" id="kaime-${i}" data-row="${i}">
+                </td>
+                <td>
+                    <input type="number" step="0.1" class="odds-input value-input" placeholder="00.0" id="odds-${i}" data-row="${i}">
+                </td>
+                <td class="text-center font-mono" id="prob-${i}">-</td>
+                <td class="text-center font-mono" id="ev-${i}">-</td>
+                <td class="text-center" id="judge-${i}">-</td>
+            `;
+            oddsTableBody.appendChild(tr);
+        }
+    }
 
     // UI Interactions
     uploadBtn.addEventListener('click', () => fileInput.click());
@@ -52,6 +74,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // Validate racecourse selection
+        const selectedRacecourse = racecourseSelect.value;
+        if (!selectedRacecourse) {
+            alert('レース場を選択してください。');
+            return;
+        }
+
         // Show loading state
         loadingState.classList.remove('hidden');
         resultsArea.classList.add('hidden');
@@ -59,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // Prepare FormData (appending multiple files under the "files" key)
             const formData = new FormData();
+            formData.append('racecourse', selectedRacecourse);
             files.forEach(file => {
                 formData.append('files', file); // 'files' matches FastAPI's list[UploadFile] param
             });
@@ -89,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderResults(data) {
         // Meta data
         document.getElementById('res-race-num').textContent = data.race_info?.race_number || "-";
-        document.getElementById('res-distance').textContent = "Google Sheets Engine V1"; // changed label for context
+        document.getElementById('res-distance').textContent = "Expected Value Engine V2"; // changed label for context
         document.getElementById('res-condition').textContent = data.race_info?.condition || "-";
 
         // Render Table and Picks List
@@ -166,8 +196,126 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show section
         resultsArea.classList.remove('hidden');
 
-        // Draw Chart (Skip for now as we hid it in the generic refactor)
-        // drawRadarChart(horses);
+        // Initialize EV calculation listeners
+        initEVCalculations(horses);
+    }
+
+    // --- Expected Value Calculation Logic ---
+    function initEVCalculations(horses) {
+        // Parse probabilities from horses data (I13:L18 strings)
+        // Format of probability strings are usually "12.3%" -> 12.3
+        const probabilities = {};
+
+        horses.forEach(h => {
+            const num = parseInt(h.number);
+
+            const parseProb = (str) => {
+                if (!str || str === '-') return 0;
+                const cleaned = str.replace(/[^0-9.]/g, '');
+                const val = parseFloat(cleaned);
+                return isNaN(val) ? 0 : val / 100.0; // Convert to decimal (e.g., 0.123)
+            };
+
+            probabilities[num] = {
+                win1: parseProb(h.pred_win_1),
+                win2: parseProb(h.pred_win_2),
+                win3: parseProb(h.pred_win_3)
+            };
+        });
+
+        // Define expected value trigger function
+        const updateRowEV = (rowId) => {
+            const kaimeStr = document.getElementById(`kaime-${rowId}`).value.trim();
+            const oddsVal = parseFloat(document.getElementById(`odds-${rowId}`).value) || 0;
+
+            const probEl = document.getElementById(`prob-${rowId}`);
+            const evEl = document.getElementById(`ev-${rowId}`);
+            const judgeEl = document.getElementById(`judge-${rowId}`);
+
+            // Validate Trifecta input (e.g., "1-2-3")
+            const parts = kaimeStr.split(/[-ー=＝,]/).map(p => parseInt(p.trim()));
+
+            if (parts.length === 3 && parts.every(n => n >= 1 && n <= 6)) {
+                // Calculate estimated trifecta probability:
+                // Simplified algorithm: (1st place prob) * (2nd place given 1st) * (3rd place given 1st and 2nd)
+                // We use the crude margin rates (win1, win2, win3) as independent marginal probabilities for demonstration
+
+                const p1 = probabilities[parts[0]].win1;
+
+                // Adjust 2nd place probability (assuming 1st place horse takes up probability mass)
+                let p2Raw = probabilities[parts[1]].win2;
+                let sumP2Others = 0;
+                for (let i = 1; i <= 6; i++) {
+                    if (i !== parts[0]) sumP2Others += probabilities[i].win2;
+                }
+                const p2 = sumP2Others > 0 ? p2Raw / sumP2Others : 0;
+
+                // Adjust 3rd place probability
+                let p3Raw = probabilities[parts[2]].win3;
+                let sumP3Others = 0;
+                for (let i = 1; i <= 6; i++) {
+                    if (i !== parts[0] && i !== parts[1]) sumP3Others += probabilities[i].win3;
+                }
+                const p3 = sumP3Others > 0 ? p3Raw / sumP3Others : 0;
+
+                const totalProb = p1 * p2 * p3;
+
+                // Calculate EV = Prob * Odds * 100
+                const expectedValue = totalProb * oddsVal * 100;
+
+                // Format UI
+                probEl.textContent = (totalProb * 100).toFixed(2) + "%";
+
+                if (oddsVal > 0) {
+                    evEl.textContent = expectedValue.toFixed(1) + "%";
+
+                    // Highlight based on expected value threshold (over 100% is mathematically profitable)
+                    if (expectedValue > 120) {
+                        evEl.style.color = "var(--secondary)"; // Gold
+                        evEl.style.fontWeight = "bold";
+                        judgeEl.innerHTML = `<span class="eval-badge eval-s" style="background:var(--secondary);color:#fff;">S</span>`;
+                    } else if (expectedValue >= 100) {
+                        evEl.style.color = "var(--primary)"; // Neon Green
+                        evEl.style.fontWeight = "bold";
+                        judgeEl.innerHTML = `<span class="eval-badge eval-b">A</span>`;
+                    } else if (expectedValue >= 80) {
+                        evEl.style.color = "var(--text-main)";
+                        evEl.style.fontWeight = "normal";
+                        judgeEl.innerHTML = `<span class="eval-badge eval-c" style="background:transparent; border: 1px solid var(--border-color); color:var(--text-muted)">B</span>`;
+                    } else {
+                        evEl.style.color = "var(--danger)";
+                        evEl.style.fontWeight = "normal";
+                        judgeEl.innerHTML = `<span class="eval-badge eval-c" style="background:transparent; border: 1px solid var(--border-color); color:var(--text-muted)">C</span>`;
+                    }
+                } else {
+                    evEl.textContent = "-";
+                    evEl.style.color = "inherit";
+                    judgeEl.innerHTML = "-";
+                }
+            } else {
+                probEl.textContent = "-";
+                evEl.textContent = "-";
+                evEl.style.color = "inherit";
+                judgeEl.innerHTML = "-";
+            }
+        };
+
+        // Attach listeners to all inputs
+        for (let i = 1; i <= 20; i++) {
+            const rowKaime = document.getElementById(`kaime-${i}`);
+            const rowOdds = document.getElementById(`odds-${i}`);
+
+            if (rowKaime && rowOdds) {
+                // Remove existing listeners by replacing clone
+                const newKaime = rowKaime.cloneNode(true);
+                const newOdds = rowOdds.cloneNode(true);
+                rowKaime.parentNode.replaceChild(newKaime, rowKaime);
+                rowOdds.parentNode.replaceChild(newOdds, rowOdds);
+
+                newKaime.addEventListener('input', () => updateRowEV(i));
+                newOdds.addEventListener('input', () => updateRowEV(i));
+            }
+        }
     }
 
     // Chart.js instance tracking to destroy before redrawing
