@@ -39,7 +39,7 @@ def write_to_sheets(extracted_data: dict, sheet_name="シート20"):
     - A3:B8 (枠番, 選手名)
     - A13:D18 (枠番, 1着率, 2着率, 3着率)
     """
-    sheet_id = os.getenv("SPREADSHEET_ID")
+    sheet_id = os.getenv("SPREADSHEET_ID", "").strip()
     if not sheet_id:
         raise Exception("SPREADSHEET_ID is not set in environment variables.")
         
@@ -153,7 +153,7 @@ def read_from_sheets(sheet_name="シート20") -> dict:
       O = 判定
       P = 買い目
     """
-    sheet_id = os.getenv("SPREADSHEET_ID")
+    sheet_id = os.getenv("SPREADSHEET_ID", "").strip()
     if not sheet_id:
         raise Exception("SPREADSHEET_ID is not set in environment variables.")
         
