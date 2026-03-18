@@ -72,8 +72,8 @@ def analyze_images_with_gemini(image_data_list: list) -> dict:
 
     # In the new SDK, we need to pass the image correctly
     # Implement retry logic for 429 RESOURCE_EXHAUSTED free tier limits
-    max_retries = 3
-    retry_delay = 5
+    max_retries = 4
+    retry_delay = 10
     response = None
     
     for attempt in range(max_retries):
@@ -87,9 +87,14 @@ def analyze_images_with_gemini(image_data_list: list) -> dict:
             err_str = str(e)
             if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
                 if attempt < max_retries - 1:
-                    print(f"Rate limit hit (429). Retrying in {retry_delay} seconds...")
-                    time.sleep(retry_delay)
-                    retry_delay *= 2  # Exponential backoff
+                    import re
+                    # Try to parse the required wait time dynamically from the API error
+                    match = re.search(r"Please retry in (\d+\.?\d*)s", err_str)
+                    wait_time = float(match.group(1)) + 1.0 if match else retry_delay
+                    
+                    print(f"Rate limit hit (429). Required wait parsed. Retrying in {wait_time:.1f} seconds (Attempt {attempt+1}/{max_retries})...")
+                    time.sleep(wait_time)
+                    retry_delay *= 2  # Exponential backoff as fallback if regex fails
                 else:
                     raise Exception(f"Gemini API Rate Limit Exceeded after {max_retries} retries: {err_str}")
             else:

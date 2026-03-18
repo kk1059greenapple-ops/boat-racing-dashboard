@@ -56,7 +56,7 @@ async def analyze_racing_data(
             image_data_list.append({"data": content, "mime_type": mime_type})
             
         # Batch images to avoid Gemini API payload and memory limits
-        batch_size = 2
+        batch_size = 3
         batched_images = [image_data_list[i:i + batch_size] for i in range(0, len(image_data_list), batch_size)]
         
         race_info_merged = {"race_number": "-", "condition": "-"}
