@@ -82,6 +82,8 @@ async def analyze_racing_data(
                         # Update the master dictionary only if the incoming value is meaningful
                         if v is not None and str(v) not in ["-", "0", "0.0", ""]:
                             master_horses[num][k] = v
+            import time
+            time.sleep(3) # Wait 3 seconds between batches to avoid Free Tier Rate Limits
                             
         all_gemini_horses = list(master_horses.values())
                 

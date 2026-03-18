@@ -61,6 +61,7 @@ def analyze_images_with_gemini(image_data_list: list) -> dict:
     
     # Dynamically append text prompt and all images
     contents_list = [prompt]
+    import time
     for img_data in image_data_list:
         contents_list.append(
             types.Part.from_bytes(
@@ -70,11 +71,33 @@ def analyze_images_with_gemini(image_data_list: list) -> dict:
         )
 
     # In the new SDK, we need to pass the image correctly
-    response = client.models.generate_content(
-        model='gemini-2.5-flash',
-        contents=contents_list
-    )
+    # Implement retry logic for 429 RESOURCE_EXHAUSTED free tier limits
+    max_retries = 3
+    retry_delay = 5
+    response = None
     
+    for attempt in range(max_retries):
+        try:
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=contents_list
+            )
+            break
+        except Exception as e:
+            err_str = str(e)
+            if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                if attempt < max_retries - 1:
+                    print(f"Rate limit hit (429). Retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+                else:
+                    raise Exception(f"Gemini API Rate Limit Exceeded after {max_retries} retries: {err_str}")
+            else:
+                raise e
+    
+    if not response:
+        raise Exception("Failed to get response from Gemini API.")
+        
     # Clean the response text in case Gemini wraps it in markdown blocks
     clean_text = response.text.replace('```json', '').replace('```', '').strip()
     # Suppress printing Japanese to avoid UnicodeEncodeError in ascii terminals
