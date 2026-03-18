@@ -63,6 +63,31 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.files.length) handleFiles(e.target.files);
     });
 
+    // Helper function to resize an image using Canvas
+    const resizeImage = (file, scale = 0.5) => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            const url = URL.createObjectURL(file);
+            img.onload = () => {
+                URL.revokeObjectURL(url);
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width * scale;
+                canvas.height = img.height * scale;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        resolve(new File([blob], file.name, { type: file.type || 'image/jpeg' }));
+                    } else {
+                        reject(new Error('Canvas to Blob failed'));
+                    }
+                }, file.type || 'image/jpeg', 0.8);
+            };
+            img.onerror = () => reject(new Error('Image load failed'));
+            img.src = url;
+        });
+    };
+
     // Handle the generic file upload process (supports multiple)
     async function handleFiles(filesList) {
         // Validate all files are images
@@ -86,17 +111,38 @@ document.addEventListener('DOMContentLoaded', () => {
         resultsArea.classList.add('hidden');
 
         try {
-            // Prepare FormData (appending multiple files under the "files" key)
+            // Prepare FormData (appending multiple resized files under the "files" key)
             const formData = new FormData();
             formData.append('racecourse', selectedRacecourse);
-            files.forEach(file => {
-                formData.append('files', file); // 'files' matches FastAPI's list[UploadFile] param
-            });
+
+            for (let file of files) {
+                try {
+                    const resizedFile = await resizeImage(file, 0.5); // 50% scale reduction
+                    formData.append('files', resizedFile);
+                } catch (resizeError) {
+                    console.error('Image resize failed for file', file.name, resizeError);
+                    formData.append('files', file); // Fallback to original image if resizing fails
+                }
+            }
 
             const response = await fetch('/api/analyze', {
                 method: 'POST',
                 body: formData
             });
+
+            // Handle non-2xx HTTP responses
+            if (!response.ok) {
+                let errorDetails = "Unknown error";
+                try {
+                    const errJson = await response.json();
+                    errorDetails = errJson.detail || JSON.stringify(errJson);
+                } catch (parseError) {
+                    errorDetails = await response.text();
+                }
+                loadingState.classList.add('hidden');
+                alert(`エラーが発生しました (Status: ${response.status})\n理由: ${errorDetails}`);
+                return;
+            }
 
             const result = await response.json();
 
@@ -104,14 +150,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (result.status === 'success') {
                 renderResults(result.data);
             } else {
-                alert('解析に失敗しました。サーバーのログを確認してください。');
+                alert(`解析に失敗しました。\n詳細: ${result.message || JSON.stringify(result)}`);
                 console.error(result);
             }
 
         } catch (error) {
             console.error('Error:', error);
             loadingState.classList.add('hidden');
-            alert('サーバーとの通信に失敗しました。バックエンドが起動しているか確認してください。');
+            alert(`サーバーとの通信に失敗しました。\nバックエンドが起動しているか確認してください。\nエラー内容: ${error.message}`);
         }
     }
 

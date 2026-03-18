@@ -3,7 +3,7 @@ from google import genai
 from google.genai import types
 import json
 
-def analyze_images_with_gemini(image_bytes_list: list) -> dict:
+def analyze_images_with_gemini(image_data_list: list) -> dict:
     """
     Analyzes multiple horse racing/boat racing newspaper images simultaneously
     using Gemini Vision API and returns a single structured JSON dictionary
@@ -61,11 +61,11 @@ def analyze_images_with_gemini(image_bytes_list: list) -> dict:
     
     # Dynamically append text prompt and all images
     contents_list = [prompt]
-    for img_bytes in image_bytes_list:
+    for img_data in image_data_list:
         contents_list.append(
             types.Part.from_bytes(
-                data=img_bytes,
-                mime_type="image/jpeg"
+                data=img_data["data"],
+                mime_type=img_data["mime_type"]
             )
         )
 

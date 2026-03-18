@@ -49,16 +49,41 @@ async def analyze_racing_data(
         if not files:
             raise HTTPException(status_code=400, detail="No files uploaded.")
             
-        image_bytes_list = []
+        image_data_list = []
         for file in files:
             content = await file.read()
-            image_bytes_list.append(content)
+            mime_type = file.content_type if file.content_type else "image/jpeg"
+            image_data_list.append({"data": content, "mime_type": mime_type})
             
-        # Pass all images to Gemini at once for multi-modal analysis (massive speed and accuracy boost)
-        extracted_data = analyze_images_with_gemini(image_bytes_list)
+        # Batch images to avoid Gemini API payload and memory limits
+        batch_size = 2
+        batched_images = [image_data_list[i:i + batch_size] for i in range(0, len(image_data_list), batch_size)]
         
-        race_info_merged = extracted_data.get("race_info", {"race_number": "-", "condition": "-"})
-        all_gemini_horses = extracted_data.get("horses", [])
+        race_info_merged = {"race_number": "-", "condition": "-"}
+        # Pre-fill master horses dictionary for slots 1 through 6
+        master_horses = {str(i): {"number": i, "name": f"未設定 {i}"} for i in range(1, 7)}
+        
+        for batch in batched_images:
+            extracted_data = analyze_images_with_gemini(batch)
+            
+            # Merge race_info if valid
+            r_info = extracted_data.get("race_info", {})
+            if r_info.get("race_number") and str(r_info.get("race_number")) != "-":
+                race_info_merged["race_number"] = r_info["race_number"]
+            if r_info.get("condition") and str(r_info.get("condition")) != "-":
+                race_info_merged["condition"] = r_info["condition"]
+                
+            # Merge horse data by slot
+            batch_horses = extracted_data.get("horses", [])
+            for h in batch_horses:
+                num = str(h.get("number", ""))
+                if num in master_horses:
+                    for k, v in h.items():
+                        # Update the master dictionary only if the incoming value is meaningful
+                        if v is not None and str(v) not in ["-", "0", "0.0", ""]:
+                            master_horses[num][k] = v
+                            
+        all_gemini_horses = list(master_horses.values())
                 
         # convert dictionary back to a sorted list
         all_gemini_horses = sorted(all_gemini_horses, key=lambda x: int(x.get("number", 99)))
